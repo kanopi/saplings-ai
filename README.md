@@ -9,8 +9,8 @@ Helpful AI functionality for content creators.
 ### Summary from OpenAI - Post
 
 This ECA workflow uses chatGPT to write a summary of the article and save it to
-the Description field on save if the field does not have one. If the Description
-has any content at all, the workflow is not run.
+the Description field on save if the field does not have one. The workflow is 
+not run if the Description has any content.
 
 OpenAI APIs have costs associated with them. [Pricing](https://openai.com/api/pricing/)
 
@@ -47,8 +47,8 @@ Then run `composer update drupal/openai`
 
 ### Configure OpenAI
 
-Create an account and an User API key at https://platform.openai.com
+Create an account and a User API key at https://platform.openai.com
 
 Add the OpenAI User key and organization ID to: `/admin/config/openai/settings`
 
-Save an you are ready to start AI-ing!
+Save, and you are ready to start AI-ing!
