@@ -18,33 +18,33 @@ label: 'Summary from OpenAI - Post'
 version: '1.0'
 weight: 0
 events:
-  Event_save_post:
+  event_save_post:
     plugin: 'content_entity:presave'
     label: 'Save Post'
     configuration:
       type: 'node sa_post'
     successors:
       -
-        id: Activity_get_body_field
-        condition: Flow_validate_empty_description
+        id: activity_get_body_field
+        condition: flow_validate_empty_description
 conditions:
-  Flow_validate_empty_description:
+  flow_validate_empty_description:
     plugin: eca_entity_field_value_empty
     configuration:
       negate: false
       field_name: sa_description
       entity: ''
-  Flow_summary_exists:
+  flow_summary_exists:
     plugin: eca_token_exists
     configuration:
       negate: false
       token_name: body_summary
-  Flow_validate_ai_summary:
+  flow_validate_ai_summary:
     plugin: eca_token_exists
     configuration:
       negate: false
       token_name: ai_summary
-  Flow_validate_desc_not_empty:
+  flow_validate_desc_not_empty:
     plugin: eca_entity_field_value_empty
     configuration:
       field_name: sa_description
@@ -52,7 +52,7 @@ conditions:
       entity: ''
 gateways: {  }
 actions:
-  Activity_get_body_field:
+  activity_get_body_field:
     plugin: eca_get_field_value
     label: 'Get body field'
     configuration:
@@ -61,9 +61,9 @@ actions:
       object: ''
     successors:
       -
-        id: Activity_ai_summary
-        condition: Flow_summary_exists
-  Activity_ai_summary:
+        id: activity_ai_summary
+        condition: flow_summary_exists
+  activity_ai_summary:
     plugin: openai_eca_execute_chat
     label: 'AI summary'
     configuration:
@@ -83,9 +83,9 @@ actions:
       token_result: ai_summary
     successors:
       -
-        id: Activity_write_description
-        condition: Flow_validate_ai_summary
-  Activity_write_description:
+        id: activity_write_description
+        condition: flow_validate_ai_summary
+  activity_write_description:
     plugin: eca_set_field_value
     label: 'Write description'
     configuration:
@@ -98,9 +98,9 @@ actions:
       object: ''
     successors:
       -
-        id: Activity_message_complete
-        condition: Flow_validate_desc_not_empty
-  Activity_message_complete:
+        id: activity_message_complete
+        condition: flow_validate_desc_not_empty
+  activity_message_complete:
     plugin: action_message_action
     label: 'Message summary is saved'
     configuration:
