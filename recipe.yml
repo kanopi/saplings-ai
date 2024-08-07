@@ -1,0 +1,12 @@
+name: 'Saplings AI'
+description: 'Helpful AI functionality for content creators.'
+type: ECA
+recipes:
+  - saplings-content-types
+install:
+  - bpmn_io
+  - eca
+  - eca_base
+  - eca_content
+  - openai
+  - openai_eca

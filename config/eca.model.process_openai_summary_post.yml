@@ -1,0 +1,240 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - eca.eca.process_openai_summary_post
+id: process_openai_summary_post
+label: 'Summary from OpenAI - Post'
+tags:
+  - untagged
+documentation: ''
+filename: ''
+modeldata: |
+  <?xml version="1.0" encoding="UTF-8"?>
+  <bpmn2:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn2="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:qa="http://some-company/schema/bpmn/qa" id="sample-diagram" targetNamespace="http://bpmn.io/schema/bpmn" xsi:schemaLocation="http://www.omg.org/spec/BPMN/20100524/MODEL BPMN20.xsd">
+    <bpmn2:process id="Process_openai_summary_post" name="Summary from OpenAI - Post" isExecutable="true" camunda:versionTag="1.0">
+      <bpmn2:startEvent id="Event_save_post" name="Save Post" camunda:modelerTemplate="org.drupal.event.content_entity:presave">
+        <bpmn2:extensionElements>
+          <camunda:properties>
+            <camunda:property name="pluginid" value="content_entity:presave" />
+          </camunda:properties>
+          <camunda:field name="type">
+            <camunda:string>node sa_post</camunda:string>
+          </camunda:field>
+        </bpmn2:extensionElements>
+        <bpmn2:outgoing>Flow_validate_empty_description</bpmn2:outgoing>
+      </bpmn2:startEvent>
+      <bpmn2:task id="Activity_get_body_field" name="Get body field" camunda:modelerTemplate="org.drupal.action.eca_get_field_value">
+        <bpmn2:extensionElements>
+          <camunda:properties>
+            <camunda:property name="pluginid" value="eca_get_field_value" />
+          </camunda:properties>
+          <camunda:field name="field_name">
+            <camunda:string>sa_body</camunda:string>
+          </camunda:field>
+          <camunda:field name="token_name">
+            <camunda:string>body_summary</camunda:string>
+          </camunda:field>
+          <camunda:field name="object">
+            <camunda:string></camunda:string>
+          </camunda:field>
+        </bpmn2:extensionElements>
+        <bpmn2:incoming>Flow_validate_empty_description</bpmn2:incoming>
+        <bpmn2:outgoing>Flow_summary_exists</bpmn2:outgoing>
+      </bpmn2:task>
+      <bpmn2:task id="Activity_ai_summary" name="AI summary" camunda:modelerTemplate="org.drupal.action.openai_eca_execute_chat">
+        <bpmn2:extensionElements>
+          <camunda:properties>
+            <camunda:property name="pluginid" value="openai_eca_execute_chat" />
+          </camunda:properties>
+          <camunda:field name="token_input">
+            <camunda:string>body_summary</camunda:string>
+          </camunda:field>
+          <camunda:field name="token_result">
+            <camunda:string>ai_summary</camunda:string>
+          </camunda:field>
+          <camunda:field name="model">
+            <camunda:string>gpt-4o-mini</camunda:string>
+          </camunda:field>
+          <camunda:field name="prompt">
+            <camunda:string>Please generate a summary under 300 characters of the following body_text:
+
+  &lt;body_text&gt;
+  [body_summary]
+  &lt;/body_text&gt;
+
+  Return a paragraph.</camunda:string>
+          </camunda:field>
+          <camunda:field name="system">
+            <camunda:string>You are an expert in content editing and an assistant to a user writing content for their website. Please return all answers without using first, second, or third person voice.</camunda:string>
+          </camunda:field>
+          <camunda:field name="temperature">
+            <camunda:string>0.4</camunda:string>
+          </camunda:field>
+          <camunda:field name="max_tokens">
+            <camunda:string>256</camunda:string>
+          </camunda:field>
+        </bpmn2:extensionElements>
+        <bpmn2:incoming>Flow_summary_exists</bpmn2:incoming>
+        <bpmn2:outgoing>Flow_validate_ai_summary</bpmn2:outgoing>
+      </bpmn2:task>
+      <bpmn2:task id="Activity_write_description" name="Write description" camunda:modelerTemplate="org.drupal.action.eca_set_field_value">
+        <bpmn2:extensionElements>
+          <camunda:properties>
+            <camunda:property name="pluginid" value="eca_set_field_value" />
+          </camunda:properties>
+          <camunda:field name="method">
+            <camunda:string>set:empty</camunda:string>
+          </camunda:field>
+          <camunda:field name="strip_tags">
+            <camunda:string>no</camunda:string>
+          </camunda:field>
+          <camunda:field name="field_name">
+            <camunda:string>sa_description</camunda:string>
+          </camunda:field>
+          <camunda:field name="trim">
+            <camunda:string>no</camunda:string>
+          </camunda:field>
+          <camunda:field name="field_value">
+            <camunda:string>[ai_summary]</camunda:string>
+          </camunda:field>
+          <camunda:field name="save_entity">
+            <camunda:string>yes</camunda:string>
+          </camunda:field>
+          <camunda:field name="object">
+            <camunda:string></camunda:string>
+          </camunda:field>
+        </bpmn2:extensionElements>
+        <bpmn2:incoming>Flow_validate_ai_summary</bpmn2:incoming>
+        <bpmn2:outgoing>Flow_validate_desc_not_empty</bpmn2:outgoing>
+      </bpmn2:task>
+      <bpmn2:task id="Activity_message_complete" name="Message summary is saved" camunda:modelerTemplate="org.drupal.action.action_message_action">
+        <bpmn2:extensionElements>
+          <camunda:properties>
+            <camunda:property name="pluginid" value="action_message_action" />
+          </camunda:properties>
+          <camunda:field name="message">
+            <camunda:string>The following description was written by AI:
+
+  [node:sa_description]</camunda:string>
+          </camunda:field>
+          <camunda:field name="replace_tokens">
+            <camunda:string>no</camunda:string>
+          </camunda:field>
+        </bpmn2:extensionElements>
+        <bpmn2:incoming>Flow_validate_desc_not_empty</bpmn2:incoming>
+      </bpmn2:task>
+      <bpmn2:sequenceFlow id="Flow_validate_empty_description" name="Validate description is empty" camunda:modelerTemplate="org.drupal.condition.eca_entity_field_value_empty" sourceRef="Event_save_post" targetRef="Activity_get_body_field">
+        <bpmn2:extensionElements>
+          <camunda:properties>
+            <camunda:property name="pluginid" value="eca_entity_field_value_empty" />
+          </camunda:properties>
+          <camunda:field name="field_name">
+            <camunda:string>sa_description</camunda:string>
+          </camunda:field>
+          <camunda:field name="negate">
+            <camunda:string>no</camunda:string>
+          </camunda:field>
+          <camunda:field name="entity">
+            <camunda:string></camunda:string>
+          </camunda:field>
+        </bpmn2:extensionElements>
+      </bpmn2:sequenceFlow>
+      <bpmn2:sequenceFlow id="Flow_summary_exists" name="Validate summary exists" camunda:modelerTemplate="org.drupal.condition.eca_token_exists" sourceRef="Activity_get_body_field" targetRef="Activity_ai_summary">
+        <bpmn2:extensionElements>
+          <camunda:properties>
+            <camunda:property name="pluginid" value="eca_token_exists" />
+          </camunda:properties>
+          <camunda:field name="token_name">
+            <camunda:string>body_summary</camunda:string>
+          </camunda:field>
+          <camunda:field name="negate">
+            <camunda:string>no</camunda:string>
+          </camunda:field>
+        </bpmn2:extensionElements>
+      </bpmn2:sequenceFlow>
+      <bpmn2:sequenceFlow id="Flow_validate_ai_summary" name="Validate AI summary exists" camunda:modelerTemplate="org.drupal.condition.eca_token_exists" sourceRef="Activity_ai_summary" targetRef="Activity_write_description">
+        <bpmn2:extensionElements>
+          <camunda:properties>
+            <camunda:property name="pluginid" value="eca_token_exists" />
+          </camunda:properties>
+          <camunda:field name="token_name">
+            <camunda:string>ai_summary</camunda:string>
+          </camunda:field>
+          <camunda:field name="negate">
+            <camunda:string>no</camunda:string>
+          </camunda:field>
+        </bpmn2:extensionElements>
+      </bpmn2:sequenceFlow>
+      <bpmn2:sequenceFlow id="Flow_validate_desc_not_empty" name="Validate description is not empty" camunda:modelerTemplate="org.drupal.condition.eca_entity_field_value_empty" sourceRef="Activity_write_description" targetRef="Activity_message_complete">
+        <bpmn2:extensionElements>
+          <camunda:properties>
+            <camunda:property name="pluginid" value="eca_entity_field_value_empty" />
+          </camunda:properties>
+          <camunda:field name="field_name">
+            <camunda:string>sa_description</camunda:string>
+          </camunda:field>
+          <camunda:field name="negate">
+            <camunda:string>yes</camunda:string>
+          </camunda:field>
+          <camunda:field name="entity">
+            <camunda:string></camunda:string>
+          </camunda:field>
+        </bpmn2:extensionElements>
+      </bpmn2:sequenceFlow>
+    </bpmn2:process>
+    <bpmndi:BPMNDiagram id="sid-1af153e4-d5a3-471e-9060-311363aabd44">
+      <bpmndi:BPMNPlane id="sid-1ff18291-f616-452b-afba-2543022dca8e" bpmnElement="Process_openai_summary_post">
+        <bpmndi:BPMNShape id="Event_0l8im19_di" bpmnElement="Event_save_post">
+          <dc:Bounds x="232" y="212" width="36" height="36" />
+          <bpmndi:BPMNLabel>
+            <dc:Bounds x="226" y="255" width="51" height="14" />
+          </bpmndi:BPMNLabel>
+        </bpmndi:BPMNShape>
+        <bpmndi:BPMNShape id="Activity_13hz0dz_di" bpmnElement="Activity_get_body_field">
+          <dc:Bounds x="390" y="190" width="100" height="80" />
+          <bpmndi:BPMNLabel />
+        </bpmndi:BPMNShape>
+        <bpmndi:BPMNShape id="Activity_03f0x16_di" bpmnElement="Activity_ai_summary">
+          <dc:Bounds x="570" y="190" width="100" height="80" />
+          <bpmndi:BPMNLabel />
+        </bpmndi:BPMNShape>
+        <bpmndi:BPMNShape id="Activity_05vmh39_di" bpmnElement="Activity_write_description">
+          <dc:Bounds x="750" y="190" width="100" height="80" />
+          <bpmndi:BPMNLabel />
+        </bpmndi:BPMNShape>
+        <bpmndi:BPMNShape id="Activity_16jas8r_di" bpmnElement="Activity_message_complete">
+          <dc:Bounds x="930" y="190" width="100" height="80" />
+          <bpmndi:BPMNLabel />
+        </bpmndi:BPMNShape>
+        <bpmndi:BPMNEdge id="Flow_024p28m_di" bpmnElement="Flow_validate_empty_description">
+          <di:waypoint x="268" y="230" />
+          <di:waypoint x="390" y="230" />
+          <bpmndi:BPMNLabel>
+            <dc:Bounds x="298" y="212" width="68" height="40" />
+          </bpmndi:BPMNLabel>
+        </bpmndi:BPMNEdge>
+        <bpmndi:BPMNEdge id="Flow_0wrh04w_di" bpmnElement="Flow_summary_exists">
+          <di:waypoint x="490" y="230" />
+          <di:waypoint x="570" y="230" />
+          <bpmndi:BPMNLabel>
+            <dc:Bounds x="488" y="212" width="88" height="27" />
+          </bpmndi:BPMNLabel>
+        </bpmndi:BPMNEdge>
+        <bpmndi:BPMNEdge id="Flow_089e62v_di" bpmnElement="Flow_validate_ai_summary">
+          <di:waypoint x="670" y="230" />
+          <di:waypoint x="750" y="230" />
+          <bpmndi:BPMNLabel>
+            <dc:Bounds x="674" y="212" width="77" height="27" />
+          </bpmndi:BPMNLabel>
+        </bpmndi:BPMNEdge>
+        <bpmndi:BPMNEdge id="Flow_082sts7_di" bpmnElement="Flow_validate_desc_not_empty">
+          <di:waypoint x="850" y="230" />
+          <di:waypoint x="930" y="230" />
+          <bpmndi:BPMNLabel>
+            <dc:Bounds x="851" y="212" width="83" height="40" />
+          </bpmndi:BPMNLabel>
+        </bpmndi:BPMNEdge>
+      </bpmndi:BPMNPlane>
+    </bpmndi:BPMNDiagram>
+  </bpmn2:definitions>

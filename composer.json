@@ -1,0 +1,12 @@
+{
+    "name": "kanopi/saplings-ai",
+    "type": "drupal-recipe",
+    "description": "Helpful AI functionality for content creators.",
+    "license": "GPL-2.0-or-later",
+    "require": {
+        "drupal/bpmn_io": "*",
+        "drupal/eca": "*",
+        "drupal/openai": "*",
+        "kanopi/saplings-content-types": "*"
+    }
+}

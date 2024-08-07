@@ -1,0 +1,112 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.node.sa_page.sa_description
+    - field.field.node.sa_post.sa_body
+    - field.field.node.sa_post.sa_description
+    - field.storage.node.sa_body
+    - field.storage.node.sa_description
+    - node.type.sa_post
+  module:
+    - eca_base
+    - eca_content
+    - openai_eca
+id: process_openai_summary_post
+modeller: bpmn_io
+label: 'Summary from OpenAI - Post'
+version: '1.0'
+weight: 0
+events:
+  Event_save_post:
+    plugin: 'content_entity:presave'
+    label: 'Save Post'
+    configuration:
+      type: 'node sa_post'
+    successors:
+      -
+        id: Activity_get_body_field
+        condition: Flow_validate_empty_description
+conditions:
+  Flow_validate_empty_description:
+    plugin: eca_entity_field_value_empty
+    configuration:
+      negate: false
+      field_name: sa_description
+      entity: ''
+  Flow_summary_exists:
+    plugin: eca_token_exists
+    configuration:
+      negate: false
+      token_name: body_summary
+  Flow_validate_ai_summary:
+    plugin: eca_token_exists
+    configuration:
+      negate: false
+      token_name: ai_summary
+  Flow_validate_desc_not_empty:
+    plugin: eca_entity_field_value_empty
+    configuration:
+      field_name: sa_description
+      negate: true
+      entity: ''
+gateways: {  }
+actions:
+  Activity_get_body_field:
+    plugin: eca_get_field_value
+    label: 'Get body field'
+    configuration:
+      field_name: sa_body
+      token_name: body_summary
+      object: ''
+    successors:
+      -
+        id: Activity_ai_summary
+        condition: Flow_summary_exists
+  Activity_ai_summary:
+    plugin: openai_eca_execute_chat
+    label: 'AI summary'
+    configuration:
+      model: gpt-4o-mini
+      prompt: |-
+        Please generate a summary under 300 characters of the following body_text:
+
+        <body_text>
+        [body_summary]
+        </body_text>
+
+        Return a paragraph.
+      system: 'You are an expert in content editing and an assistant to a user writing content for their website. Please return all answers without using first, second, or third person voice.'
+      temperature: '0.4'
+      max_tokens: '256'
+      token_input: body_summary
+      token_result: ai_summary
+    successors:
+      -
+        id: Activity_write_description
+        condition: Flow_validate_ai_summary
+  Activity_write_description:
+    plugin: eca_set_field_value
+    label: 'Write description'
+    configuration:
+      field_name: sa_description
+      field_value: '[ai_summary]'
+      method: 'set:empty'
+      strip_tags: false
+      trim: false
+      save_entity: true
+      object: ''
+    successors:
+      -
+        id: Activity_message_complete
+        condition: Flow_validate_desc_not_empty
+  Activity_message_complete:
+    plugin: action_message_action
+    label: 'Message summary is saved'
+    configuration:
+      replace_tokens: false
+      message: |-
+        The following description was written by AI:
+
+        [node:sa_description]
+    successors: {  }
